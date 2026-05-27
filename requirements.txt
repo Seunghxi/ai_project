@@ -1,6 +1,8 @@
 streamlit
 folium 
 streamlit-folium
-streamlit
 pandas
 plotly
+requirements.txt
+matplotlib
+openpyxl
