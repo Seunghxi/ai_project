@@ -3,6 +3,5 @@ folium
 streamlit-folium
 pandas
 plotly
-requirements.txt
 matplotlib
 openpyxl
