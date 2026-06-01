@@ -2,23 +2,39 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 
+# ---------------------------
+# 페이지 설정
+# ---------------------------
 st.set_page_config(
     page_title="서울 기온 분석",
     layout="wide"
 )
 
-# 한글 깨짐 방지
-plt.rcParams["font.family"] = ["Malgun Gothic", "NanumGothic"]
-plt.rcParams["axes.unicode_minus"] = False
-
 st.title("🌡️ 서울 기온 분석")
 
+# ---------------------------
+# 한글 폰트 설정
+# ---------------------------
+plt.rcParams["font.family"] = ["Malgun Gothic", "NanumGothic", "AppleGothic"]
+plt.rcParams["axes.unicode_minus"] = False
+
+# ---------------------------
+# 데이터 불러오기
+# ---------------------------
 @st.cache_data
 def load_data():
+
     df = pd.read_csv("seoul.csv", encoding="cp949")
 
-    df["날짜"] = pd.to_datetime(df["날짜"])
+    # 날짜 변환 (오류 발생 시 제거)
+    df["날짜"] = pd.to_datetime(
+        df["날짜"],
+        errors="coerce"
+    )
 
+    df = df.dropna(subset=["날짜"])
+
+    # 연도, 월, 일 추출
     df["연도"] = df["날짜"].dt.year
     df["월"] = df["날짜"].dt.month
     df["일"] = df["날짜"].dt.day
@@ -27,52 +43,62 @@ def load_data():
 
 df = load_data()
 
-# 월 선택
-month = st.selectbox(
-    "월 선택",
-    range(1, 13)
-)
+# ---------------------------
+# 월/일 선택
+# ---------------------------
+col1, col2 = st.columns(2)
 
-# 일 선택
-day = st.selectbox(
-    "일 선택",
-    range(1, 32)
-)
+with col1:
+    selected_month = st.selectbox(
+        "월 선택",
+        range(1, 13)
+    )
 
-# 해당 날짜 필터링
+with col2:
+    selected_day = st.selectbox(
+        "일 선택",
+        range(1, 32)
+    )
+
+# ---------------------------
+# 데이터 필터링
+# ---------------------------
 filtered = df[
-    (df["월"] == month) &
-    (df["일"] == day)
+    (df["월"] == selected_month) &
+    (df["일"] == selected_day)
 ].copy()
 
 filtered = filtered.sort_values("연도")
 
+# ---------------------------
+# 그래프
+# ---------------------------
 if len(filtered) > 0:
 
     fig, ax = plt.subplots(figsize=(14, 6))
 
-    # 최고기온
+    # 최고기온 (빨간색)
     ax.plot(
         filtered["연도"],
         filtered["최고기온(℃)"],
         color="red",
-        linewidth=2,
         marker="o",
+        linewidth=2,
         label="최고기온"
     )
 
-    # 최저기온
+    # 최저기온 (연한 파란색)
     ax.plot(
         filtered["연도"],
         filtered["최저기온(℃)"],
         color="lightskyblue",
-        linewidth=2,
         marker="o",
+        linewidth=2,
         label="최저기온"
     )
 
     ax.set_title(
-        f"{month}월 {day}일 연도별 최고·최저기온",
+        f"{selected_month}월 {selected_day}일 연도별 최고·최저기온",
         fontsize=16
     )
 
@@ -82,15 +108,15 @@ if len(filtered) > 0:
     ax.grid(
         True,
         linestyle="--",
-        alpha=0.4
+        alpha=0.5
     )
 
-    # 범례
     ax.legend()
 
     st.pyplot(fig)
 
-    st.subheader("데이터")
+    # 데이터 표
+    st.subheader("📋 데이터")
 
     st.dataframe(
         filtered[
